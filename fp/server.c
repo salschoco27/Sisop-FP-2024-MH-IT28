@@ -142,7 +142,6 @@ void *handle_client(void *arg) {
     char buffer[1024];
     int read_size;
     
-    // Komunikasi dengan client
     while ((read_size = recv(client_socket, buffer, sizeof(buffer), 0)) > 0) {
         buffer[read_size] = '\0';
         printf("Diterima dari client: %s\n", buffer);
@@ -151,8 +150,8 @@ void *handle_client(void *arg) {
             list_users(client_socket);
         } else if (strncmp(buffer, "EDIT WHERE", 10) == 0) {
             //strtok(buffer, " ");
-            strtok(buffer, " "); // Skip "EDIT"
-            strtok(NULL, " "); // Skip "WHERE"
+            strtok(buffer, " "); 
+            strtok(NULL, " "); 
             edit_user(client_socket, strtok(NULL, ""));
         } else if (strncmp(buffer, "REMOVE", 6) == 0) {
             strtok(buffer, " ");
@@ -165,7 +164,6 @@ void *handle_client(void *arg) {
 
         memset(buffer, 0, sizeof(buffer));
     }
-    
     close(client_socket);
     return NULL;
 }
@@ -182,7 +180,6 @@ int main() {
         perror("Socket gagal");
         exit(EXIT_FAILURE);
     }
-
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
     server_addr.sin_port = htons(PORT);
@@ -193,7 +190,6 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    // Listening
     if (listen(server_socket, 3) < 0) {
         perror("Listen gagal");
         exit(EXIT_FAILURE);
