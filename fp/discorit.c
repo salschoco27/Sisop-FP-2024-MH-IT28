@@ -39,7 +39,7 @@ int login_user(const char *username, const char *password) {
 
     char line[256];
     while (fgets(line, sizeof(line), file)) {
-        line[strcspn(line, "\r\n")] = 0; // Menghapus newline atau carriage return jika ada
+        line[strcspn(line, "\r\n")] = 0;
         char *saved_username = strtok(line, ",");
         char *saved_password = strtok(NULL, ",");
         char *role = strtok(NULL, ",");
@@ -74,7 +74,7 @@ void register_user(const char *username, const char *password) {
 
     char line[256];
     while (fgets(line, sizeof(line), file)) {
-        line[strcspn(line, "\r\n")] = 0; // Menghapus newline atau carriage return jika ada
+        line[strcspn(line, "\r\n")] = 0; 
         char *saved_username = strtok(line, ",");
         if (saved_username != NULL && strcmp(saved_username, username) == 0) {
             printf("Username sudah terdaftar\n");
@@ -83,8 +83,8 @@ void register_user(const char *username, const char *password) {
         }
     }
 
-    // Enkripsi password menggunakan bcrypt
-    char salt[] = "$6$XXXXXXXXXX"; // Gantilah ini dengan salt yang sesuai
+    //bcrypt
+    char salt[] = "$6$XXXX"; // Gantilah ini dengan salt yang sesuai
     char *encrypted_password = crypt(password, salt);
 
     if (encrypted_password == NULL) {
@@ -131,7 +131,6 @@ int main(int argc, char *argv[]) {
             serv_addr.sin_family = AF_INET;
             serv_addr.sin_port = htons(SERVER_PORT);
             
-            // Convert IPv4 and IPv6 addresses from text to binary form
             if(inet_pton(AF_INET, SERVER_IP, &serv_addr.sin_addr) <= 0) {
                 printf("\nInvalid address/ Address not supported \n");
                 return -1;
@@ -144,7 +143,7 @@ int main(int argc, char *argv[]) {
 
             printf("[%s] ", argv[2]);
             while (fgets(command, sizeof(command), stdin)) {
-                command[strcspn(command, "\r\n")] = 0; // Menghapus newline atau carriage return jika ada
+                command[strcspn(command, "\r\n")] = 0; 
                 send(sock, command, strlen(command), 0);
                 read(sock, buffer, 1024);
                 printf("%s\n", buffer);
