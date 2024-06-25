@@ -22,7 +22,7 @@ void create_directory_if_not_exists(const char *path) {
 int is_file_empty(const char *filename) {
     FILE *file = fopen(filename, "r");
     if (!file) {
-        return 1; // Jika file tidak ada, anggap sebagai kosong
+        return 1; 
     }
     fseek(file, 0, SEEK_END);
     long size = ftell(file);
@@ -49,18 +49,18 @@ int login_user(const char *username, const char *password) {
             if (strcmp(saved_password, encrypted_password) == 0) {
                 fclose(file);
                 printf("%s berhasil login\n", username);
-                return 1; // Login berhasil
+                return 1; //login berhasil
             } else {
                 fclose(file);
                 printf("Login gagal: username atau password salah\n");
-                return 0; // Password salah
+                return 0; //password salah
             }
         }
     }
 
     fclose(file);
     printf("Login gagal: username tidak ditemukan\n");
-    return 0; // Username tidak ditemukan
+    return 0;
 }
 
 void register_user(const char *username, const char *password) {
@@ -84,7 +84,7 @@ void register_user(const char *username, const char *password) {
     }
 
     //bcrypt
-    char salt[] = "$6$XXXX"; // Gantilah ini dengan salt yang sesuai
+    char salt[] = "$6$XXXX"; 
     char *encrypted_password = crypt(password, salt);
 
     if (encrypted_password == NULL) {
