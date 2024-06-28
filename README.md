@@ -106,7 +106,7 @@ void edit_user(int client_socket, char *command) {
         if (saved_username != NULL && strcmp(saved_username, username) == 0) {
             fprintf(temp_file, "%s,%s,%s\n", new_value, saved_password, role);
             found = 1;
-            //kalau tidak ada, data aseli yang masuk
+            //kalau tidak ada, data asli yang masuk
         } else {
             fprintf(temp_file, "%s,%s,%s\n", saved_username, saved_password, role);
         }
@@ -115,7 +115,7 @@ void edit_user(int client_socket, char *command) {
     fclose(temp_file);
 
 //untuk ganti/rewrite file
-    //kalau username ada = file aseli hapus, temp_file jadi file aseli
+    //kalau username ada = file asli hapus, temp_file jadi file asli
     //lalu kirim pesan sukses ke klien
     if (found) {
         remove(FILE_PATH);
@@ -181,7 +181,7 @@ void remove_user(int client_socket, char *username) {
     fclose(file);
     fclose(temp_file);
 
-//kalau ketemu, file aseli dihapus, temp_file berubah jadi file aseli lalu pesan sukses dikirim ke klien
+//kalau ketemu, file asli dihapus, temp_file berubah jadi file asli lalu pesan sukses dikirim ke klien
     if (found) {
         remove(FILE_PATH);
         rename(temp_path, FILE_PATH);
