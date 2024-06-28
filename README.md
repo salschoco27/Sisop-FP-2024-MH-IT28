@@ -511,7 +511,9 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 ```
-
+## Command untuk menjalankan program
+./discorit REGISTER <username> -p <password> 
+Jika dalam system belum tercatat username manapun, maka otomatis akun pertama yang register akan memiliki tipe ROOT yang dapat mengubah username, menghapus, dan mengganti password USER lain. 
 ## Dokumentasi
 ![Screenshot_2024-06-28_13_07_46](https://github.com/salschoco27/Sisop-FP-2024-MH-IT28/assets/151063684/ce1abe7c-af06-47b4-9217-e90cc09c136a)
 ![Screenshot_2024-06-28_13_07_51](https://github.com/salschoco27/Sisop-FP-2024-MH-IT28/assets/151063684/b371ac86-bf0c-4dbd-b03e-eb0e5f5a56be)
