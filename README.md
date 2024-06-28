@@ -183,6 +183,7 @@ void *handle_client(void *arg) {
     close(client_socket);
     return NULL;
 }
+```
 
 Main Function
 ```c
