@@ -424,3 +424,5 @@ int main(int argc, char *argv[]) {
 ![Screenshot_2024-06-28_13_07_46](https://github.com/salschoco27/Sisop-FP-2024-MH-IT28/assets/151063684/ce1abe7c-af06-47b4-9217-e90cc09c136a)
 ![Screenshot_2024-06-28_13_07_51](https://github.com/salschoco27/Sisop-FP-2024-MH-IT28/assets/151063684/b371ac86-bf0c-4dbd-b03e-eb0e5f5a56be)
 
+## Dokumentasi setelah saya ubah
+![Screenshot_2024-06-28_13_24_10](https://github.com/salschoco27/Sisop-FP-2024-MH-IT28/assets/151063684/67cc6d70-2c75-4a47-a642-faa77f4abb45)
