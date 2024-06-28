@@ -17,23 +17,35 @@ Library dan define path
 
 Fungsi untuk list user untuk ROOT
 ```c
+// fopen Membuka file users.csv dalam mode baca (r)
 void list_users(int client_socket) {
     FILE *file = fopen(FILE_PATH, "r");
+
+        // Jika file tidak bisa dibuka (gaada/file==null), tampilkan pesan error lalu keluar dari fungsi tanpa eksekusi lebih lanjut
     if (!file) {
         perror("Gagal membuka file users.csv");
         return;
     }
 
+     // simpan satu baris data dari file CSV
     char line[256];
+     // Menyimpan respons yang akan dikirim ke klien
     char response[1024] = "";
+
+     // fgets Membaca file baris per baris
     while (fgets(line, sizeof(line), file)) {
+        // strcspn Menghapus karakter newline (`\r\n` atau `\n`)dari akhir baris (jika ada)
+        // strtok memisahkan baris berdasarkan koma (,) dan mengambil token pertama sebagai username.
         line[strcspn(line, "\r\n")] = 0;
         char *username = strtok(line, ",");
+        // strcat Menambahkan username ke dalam respons
         strcat(response, username);
         strcat(response, " ");
     }
+    // tutup file setelah selesai membaca
     fclose(file);
 
+    // Mengirim respons ke klien melalui socket
     send(client_socket, response, strlen(response), 0);
 }
 ```
@@ -41,7 +53,10 @@ void list_users(int client_socket) {
 Fungsi untuk edit username dan password user
 ```c
 void edit_user(int client_socket, char *command) {
-    char *username = strtok(command, " ");
+//strtok untuk memisahkan command menjadi username, field, & new_value
+//Jika username, field, atau new_value tidak ditemukan atau formatnya salah, fungsi mengirim pesan error dan keluar.
+
+    char *username = strtok(command, " "); 
     if (username == NULL) {
         send(client_socket, "Format salah\n", 13, 0);
         return;
@@ -59,7 +74,10 @@ void edit_user(int client_socket, char *command) {
         return;
     }
 
+    //fopen membuka file users.csv dalam mode baca ("r") dan file sementara users_temp.csv dalam mode tulis ("w").
     FILE *file = fopen(FILE_PATH, "r");
+
+//Jika salah satu file gagal dibuka, fungsi mencetak pesan error dan keluar.*1
     if (!file) {
         perror("Gagal membuka file users.csv");
         return;
@@ -67,23 +85,28 @@ void edit_user(int client_socket, char *command) {
 
     char temp_path[] = "DiscorIT/users_temp.csv";
     FILE *temp_file = fopen(temp_path, "w");
+//sama seperti *1
     if (!temp_file) {
         perror("Gagal membuka file temp");
         fclose(file);
         return;
     }
 
+//baca & tulis file
     char line[256];
     int found = 0;
+    //fgets membaca file users.csv baris demi baris.
     while (fgets(line, sizeof(line), file)) {
         line[strcspn(line, "\r\n")] = 0;
+            //strtok mengubah tiap line jadi saved_username, saved_password, dan role.
         char *saved_username = strtok(line, ",");
         char *saved_password = strtok(NULL, ",");
         char *role = strtok(NULL, ",");
-
+            //kalau username ada, data yg diubah masuk ke temp_file
         if (saved_username != NULL && strcmp(saved_username, username) == 0) {
             fprintf(temp_file, "%s,%s,%s\n", new_value, saved_password, role);
             found = 1;
+            //kalau tidak ada, data aseli yang masuk
         } else {
             fprintf(temp_file, "%s,%s,%s\n", saved_username, saved_password, role);
         }
@@ -91,13 +114,20 @@ void edit_user(int client_socket, char *command) {
     fclose(file);
     fclose(temp_file);
 
+//untuk ganti/rewrite file
+    //kalau username ada = file aseli hapus, temp_file jadi file aseli
+    //lalu kirim pesan sukses ke klien
     if (found) {
         remove(FILE_PATH);
         rename(temp_path, FILE_PATH);
         char response[256];
         snprintf(response, sizeof(response), "%s berhasil diubah menjadi %s\n", username, new_value);
         send(client_socket, response, strlen(response), 0);
-    } else {
+    }
+
+    //kalo tidak ada ya, yowes temp_file dihapus
+    //lalu kirim pesan error/gagal ke klien
+    else {
         remove(temp_path);
         send(client_socket, "Username tidak ditemukan\n", 25, 0);
     }
@@ -106,6 +136,9 @@ void edit_user(int client_socket, char *command) {
 
 Fungsi untuk remove user
 ```c
+//untuk membuka file
+    //buka users.csv di mode baca (r)
+    //kalau gagal dibuka (file == null), perror mengirim pesan error dan stop eksekusi 
 void remove_user(int client_socket, char *username) {
     FILE *file = fopen(FILE_PATH, "r");
     if (!file) {
@@ -113,6 +146,9 @@ void remove_user(int client_socket, char *username) {
         return;
     }
 
+    //membuat temp_file untuk menulis data yang diubah
+        //fopen buka temp_file di mode tulis (w)
+        //kalau gagal buka file = perror mengirim pesan error lalu stop eksekusi
     char temp_path[] = "DiscorIT/users_temp.csv";
     FILE *temp_file = fopen(temp_path, "w");
     if (!temp_file) {
@@ -121,16 +157,23 @@ void remove_user(int client_socket, char *username) {
         return;
     }
 
+//mencari user yang ingin dihapuskan
+
     char line[256];
-    int found = 0;
+    int found = 0; //penanda apakah username ditemukan atau tidak
+        //fgets membaca isi users.csv
+        //strcspn menghapus newline di akhir baris
+        //strok memisah tiap baris jadi saved_username, saved_password, role
     while (fgets(line, sizeof(line), file)) {
         line[strcspn(line, "\r\n")] = 0;
         char *saved_username = strtok(line, ",");
         char *saved_password = strtok(NULL, ",");
         char *role = strtok(NULL, ",");
 
+        //kalau tidak cocok dengan yang akan dihapus, data asli masuk ke temp_file
         if (saved_username != NULL && strcmp(saved_username, username) != 0) {
             fprintf(temp_file, "%s,%s,%s\n", saved_username, saved_password, role);
+        //kalau cocok dengan yg akan dihapus, ditandai jadi 1 untuk penanda pengguna ditemukan
         } else if (saved_username != NULL) {
             found = 1;
         }
@@ -138,13 +181,16 @@ void remove_user(int client_socket, char *username) {
     fclose(file);
     fclose(temp_file);
 
+//kalau ketemu, file aseli dihapus, temp_file berubah jadi file aseli lalu pesan sukses dikirim ke klien
     if (found) {
         remove(FILE_PATH);
         rename(temp_path, FILE_PATH);
         char response[256];
         snprintf(response, sizeof(response), "%s berhasil dihapus\n", username);
         send(client_socket, response, strlen(response), 0);
-    } else {
+    }
+//kalau tidak ditemukan, temp_file dihapus lalu pesan error dikirim ke klien
+else {
         remove(temp_path);
         send(client_socket, "Username tidak ditemukan\n", 25, 0);
     }
