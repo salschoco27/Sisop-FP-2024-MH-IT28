@@ -200,35 +200,55 @@ else {
 Menyambungkan ke discorit.c
 ```c
 void *handle_client(void *arg) {
+    // mendapatkan socket klien dari argumen dan melepaskan memori
     int client_socket = *((int *)arg);
     free(arg);
+    
+    // buffer untuk menyimpan data yang diterima dari klien
     char buffer[1024];
     int read_size;
-    
+
+    // loop untuk terus menerima data dari klien selama masih ada data yang diterima
     while ((read_size = recv(client_socket, buffer, sizeof(buffer), 0)) > 0) {
+        // menambahkan null-terminator di akhir data yang diterima agar dapat diproses sebagai string
         buffer[read_size] = '\0';
         printf("Diterima dari client: %s\n", buffer);
 
+        // memeriksa apakah data yang diterima adalah perintah "LIST USER"
         if (strncmp(buffer, "LIST USER", 9) == 0) {
-            list_users(client_socket);
-        } else if (strncmp(buffer, "EDIT WHERE", 10) == 0) {
-            strtok(buffer, " "); 
-            strtok(NULL, " "); 
+            list_users(client_socket); // memanggil fungsi untuk daftar pengguna
+        }
+        // memeriksa apakah data yang diterima adalah perintah "EDIT WHERE"
+        else if (strncmp(buffer, "EDIT WHERE", 10) == 0) {
+            strtok(buffer, " "); // mengabaikan kata pertama "EDIT"
+            strtok(NULL, " "); // mengabaikan kata kedua "WHERE"
+            // memanggil fungsi untuk mengedit pengguna dengan argumen yang tersisa
             edit_user(client_socket, strtok(NULL, ""));
-        } else if (strncmp(buffer, "REMOVE", 6) == 0) {
-            strtok(buffer, " ");
+        }
+        // memeriksa apakah data yang diterima adalah perintah "REMOVE"
+        else if (strncmp(buffer, "REMOVE", 6) == 0) {
+            strtok(buffer, " "); // mengabaikan kata pertama "REMOVE"
+            // memanggil fungsi untuk menghapus pengguna dengan argumen yang tersisa
             remove_user(client_socket, strtok(NULL, " "));
-        } else {
+        }
+        // jika perintah tidak dikenal, kirimkan kembali pesan yang diterima ke klien
+        else {
             char response[1024];
+            // membuat balasan dengan menambahkan teks "Server menerima: " di depan pesan klien
             snprintf(response, sizeof(response), "Server menerima: %s", buffer);
+            // mengirim balasan ke klien
             send(client_socket, response, strlen(response), 0);
         }
 
+        // mengosongkan buffer untuk siap menerima data berikutnya
         memset(buffer, 0, sizeof(buffer));
     }
+
+    // menutup socket klien setelah selesai berkomunikasi
     close(client_socket);
-    return NULL;
+    return NULL; // mengembalikan NULL karena fungsi ini harus mengembalikan void*
 }
+
 ```
 
 Main Function
@@ -237,41 +257,46 @@ int main() {
     int server_socket, client_socket, *new_sock;
     struct sockaddr_in server_addr, client_addr;
     socklen_t client_len = sizeof(client_addr);
-    pthread_t tid[MAX_CLIENTS];
+    pthread_t tid[MAX_CLIENTS]; // array untuk menyimpan thread ID
     int i = 0;
 
-    //membuat socket
+    // membuat socket
     if ((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
-        perror("Socket gagal");
+        perror("socket gagal");
         exit(EXIT_FAILURE);
     }
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = INADDR_ANY;
-    server_addr.sin_port = htons(PORT);
+    server_addr.sin_family = AF_INET; // menggunakan protokol IPv4
+    server_addr.sin_addr.s_addr = INADDR_ANY; // mendengarkan pada semua interface
+    server_addr.sin_port = htons(PORT); // mengatur port yang digunakan
 
-    // Binding
+    // binding
     if (bind(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
-        perror("Bind gagal");
+        perror("bind gagal");
         exit(EXIT_FAILURE);
     }
 
+    // listen
     if (listen(server_socket, 3) < 0) {
-        perror("Listen gagal");
+        perror("listen gagal");
         exit(EXIT_FAILURE);
     }
 
-    printf("Server berjalan pada port %d\n", PORT);
+    printf("server berjalan pada port %d\n", PORT);
 
+    // loop untuk menerima koneksi klien
     while ((client_socket = accept(server_socket, (struct sockaddr *)&client_addr, &client_len)) > 0) {
-        printf("Koneksi baru diterima\n");
+        printf("koneksi baru diterima\n");
 
+        // alokasi memori untuk socket klien
         new_sock = malloc(sizeof(int));
         *new_sock = client_socket;
 
+        // membuat thread untuk menangani klien
         if (pthread_create(&tid[i++], NULL, handle_client, (void *)new_sock) != 0) {
-            perror("Gagal membuat thread");
+            perror("gagal membuat thread");
         }
 
+        // jika jumlah thread melebihi MAX_CLIENTS, menunggu thread untuk selesai
         if (i >= MAX_CLIENTS) {
             i = 0;
             while (i < MAX_CLIENTS) {
@@ -281,8 +306,9 @@ int main() {
         }
     }
 
+    // jika accept gagal
     if (client_socket < 0) {
-        perror("Accept gagal");
+        perror("accept gagal");
         exit(EXIT_FAILURE);
     }
 
@@ -311,58 +337,60 @@ Library dan define path
 
 Membuat directory yang dibutuhkan apa bila directory belum ada
 ```c
+// memeriksa apakah direktori ada, jika tidak, membuat direktori dengan izin 0700
 void create_directory_if_not_exists(const char *path) {
-    struct stat st = {0};
-    if (stat(path, &st) == -1) {
-        mkdir(path, 0700);
+    struct stat st = {0}; // mendeklarasikan struktur untuk memeriksa status file atau direktori
+    if (stat(path, &st) == -1) { // jika status path tidak dapat diperoleh (direktori tidak ada)
+        mkdir(path, 0700); // membuat direktori dengan izin 0700 (pemilik dapat membaca, menulis, dan mengeksekusi)
     }
 }
 
+// memeriksa apakah file kosong dengan memeriksa ukurannya
 int is_file_empty(const char *filename) {
-    FILE *file = fopen(filename, "r");
-    if (!file) {
-        return 1; 
+    FILE *file = fopen(filename, "r"); // membuka file untuk membaca
+    if (!file) { // jika file tidak dapat dibuka (misalnya, tidak ada)
+        return 1; // mengembalikan 1 yang menunjukkan file kosong atau tidak ada
     }
-    fseek(file, 0, SEEK_END);
-    long size = ftell(file);
-    fclose(file);
-    return size == 0;
+    fseek(file, 0, SEEK_END); // menggerakkan pointer file ke akhir file
+    long size = ftell(file); // mendapatkan ukuran file dengan mendapatkan posisi pointer di akhir
+    fclose(file); // menutup file
+    return size == 0; // mengembalikan 1 jika ukuran file 0 (file kosong), jika tidak mengembalikan 0
 }
 ```
 
 Mengatur untuk fitur LOGIN
 ```c
 int login_user(const char *username, const char *password) {
-    FILE *file = fopen(FILE_PATH, "r");
-    if (!file) {
-        perror("Gagal membuka file users.csv");
-        exit(EXIT_FAILURE);
+    FILE *file = fopen(FILE_PATH, "r"); // membuka file users.csv untuk membaca
+    if (!file) { // jika file tidak dapat dibuka
+        perror("Gagal membuka file users.csv"); // mencetak pesan kesalahan
+        exit(EXIT_FAILURE); // keluar dari program dengan kode kesalahan
     }
 
-    char line[256];
-    while (fgets(line, sizeof(line), file)) {
-        line[strcspn(line, "\r\n")] = 0;
-        char *saved_username = strtok(line, ",");
-        char *saved_password = strtok(NULL, ",");
-        char *role = strtok(NULL, ",");
+    char line[256]; // buffer untuk membaca baris dari file
+    while (fgets(line, sizeof(line), file)) { // membaca baris demi baris dari file
+        line[strcspn(line, "\r\n")] = 0; // menghapus karakter newline dari akhir baris
+        char *saved_username = strtok(line, ","); // memisahkan nama pengguna
+        char *saved_password = strtok(NULL, ","); // memisahkan kata sandi yang disimpan
+        char *role = strtok(NULL, ","); // memisahkan peran (role) pengguna, jika ada
 
-        if (saved_username != NULL && saved_password != NULL && strcmp(saved_username, username) == 0) {
-            char *encrypted_password = crypt(password, saved_password);
-            if (strcmp(saved_password, encrypted_password) == 0) {
-                fclose(file);
-                printf("%s berhasil login\n", username);
-                return 1; //login berhasil
+        if (saved_username != NULL && saved_password != NULL && strcmp(saved_username, username) == 0) { // memeriksa apakah username cocok
+            char *encrypted_password = crypt(password, saved_password); // mengenkripsi kata sandi yang diberikan
+            if (strcmp(saved_password, encrypted_password) == 0) { // membandingkan kata sandi yang disimpan dengan kata sandi terenkripsi
+                fclose(file); // menutup file setelah berhasil login
+                printf("%s berhasil login\n", username); // mencetak pesan bahwa login berhasil
+                return 1; // mengembalikan 1 jika login berhasil
             } else {
-                fclose(file);
-                printf("Login gagal: username atau password salah\n");
-                return 0; //password salah
+                fclose(file); // menutup file jika password salah
+                printf("Login gagal: username atau password salah\n"); // mencetak pesan bahwa login gagal karena password salah
+                return 0; // mengembalikan 0 jika password salah
             }
         }
     }
 
-    fclose(file);
-    printf("Login gagal: username tidak ditemukan\n");
-    return 0;
+    fclose(file); // menutup file jika username tidak ditemukan
+    printf("Login gagal: username tidak ditemukan\n"); // mencetak pesan bahwa login gagal karena username tidak ditemukan
+    return 0; // mengembalikan 0 jika username tidak ditemukan
 }
 ```
 
