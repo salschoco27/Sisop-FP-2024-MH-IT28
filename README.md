@@ -1,5 +1,7 @@
 # FINAL PROJECT SISTEM OPERASI IT28
 ## server.c
+
+Library dan define path
 ```c
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,7 +13,10 @@
 #define PORT 8080
 #define MAX_CLIENTS 100
 #define FILE_PATH "DiscorIT/users.csv"
+```
 
+Fungsi untuk list user untuk ROOT
+```c
 void list_users(int client_socket) {
     FILE *file = fopen(FILE_PATH, "r");
     if (!file) {
@@ -31,7 +36,10 @@ void list_users(int client_socket) {
 
     send(client_socket, response, strlen(response), 0);
 }
+```
 
+Fungsi untuk edit username dan password user
+```c
 void edit_user(int client_socket, char *command) {
     char *username = strtok(command, " ");
     if (username == NULL) {
@@ -94,7 +102,10 @@ void edit_user(int client_socket, char *command) {
         send(client_socket, "Username tidak ditemukan\n", 25, 0);
     }
 }
+```
 
+Fungsi untuk remove user
+```c
 void remove_user(int client_socket, char *username) {
     FILE *file = fopen(FILE_PATH, "r");
     if (!file) {
@@ -138,7 +149,10 @@ void remove_user(int client_socket, char *username) {
         send(client_socket, "Username tidak ditemukan\n", 25, 0);
     }
 }
+```
 
+Menyambungkan ke discorit.c
+```c
 void *handle_client(void *arg) {
     int client_socket = *((int *)arg);
     free(arg);
@@ -152,7 +166,6 @@ void *handle_client(void *arg) {
         if (strncmp(buffer, "LIST USER", 9) == 0) {
             list_users(client_socket);
         } else if (strncmp(buffer, "EDIT WHERE", 10) == 0) {
-            //strtok(buffer, " ");
             strtok(buffer, " "); 
             strtok(NULL, " "); 
             edit_user(client_socket, strtok(NULL, ""));
@@ -171,6 +184,8 @@ void *handle_client(void *arg) {
     return NULL;
 }
 
+Main Function
+```c
 int main() {
     int server_socket, client_socket, *new_sock;
     struct sockaddr_in server_addr, client_addr;
@@ -178,7 +193,7 @@ int main() {
     pthread_t tid[MAX_CLIENTS];
     int i = 0;
 
-    // Membuat socket
+    //membuat socket
     if ((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
         perror("Socket gagal");
         exit(EXIT_FAILURE);
@@ -230,6 +245,7 @@ int main() {
 
 
 ## discorit.c
+Library dan define path
 ```c
 #include <stdio.h>
 #include <stdlib.h>
@@ -244,7 +260,10 @@ int main() {
 #define FILE_PATH DIRECTORY "/users.csv"
 #define SERVER_PORT 8080
 #define SERVER_IP "127.0.0.1"
+```
 
+Membuat directory yang dibutuhkan apa bila directory belum ada
+```c
 void create_directory_if_not_exists(const char *path) {
     struct stat st = {0};
     if (stat(path, &st) == -1) {
@@ -262,7 +281,10 @@ int is_file_empty(const char *filename) {
     fclose(file);
     return size == 0;
 }
+```
 
+Mengatur untuk fitur LOGIN
+```c
 int login_user(const char *username, const char *password) {
     FILE *file = fopen(FILE_PATH, "r");
     if (!file) {
@@ -295,7 +317,10 @@ int login_user(const char *username, const char *password) {
     printf("Login gagal: username tidak ditemukan\n");
     return 0;
 }
+```
 
+Fungsi untuk REGISTER 
+```c
 void register_user(const char *username, const char *password) {
     create_directory_if_not_exists(DIRECTORY);
     
@@ -331,7 +356,10 @@ void register_user(const char *username, const char *password) {
     fclose(file);
     printf("%s berhasil register sebagai %s\n", username, role);
 }
+```
 
+Main Function
+```c
 int main(int argc, char *argv[]) {
     if (argc < 2) {
         printf("Usage: %s REGISTER username -p password\n", argv[0]);
