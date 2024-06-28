@@ -401,7 +401,7 @@ void register_user(const char *username, const char *password) {
     
     FILE *file = fopen(FILE_PATH, "a+");
     if (!file) {
-        perror("Gagal membuka file users.csv");
+        perror("gagal membuka file users.csv");
         exit(EXIT_FAILURE);
     }
 
@@ -410,23 +410,26 @@ void register_user(const char *username, const char *password) {
         line[strcspn(line, "\r\n")] = 0; 
         char *saved_username = strtok(line, ",");
         if (saved_username != NULL && strcmp(saved_username, username) == 0) {
-            printf("Username sudah terdaftar\n");
+            printf("username sudah terdaftar\n");
             fclose(file);
             return;
         }
     }
 
-    //bcrypt
+    // bcrypt
     char salt[] = "$6$XXXX"; 
     char *encrypted_password = crypt(password, salt);
 
     if (encrypted_password == NULL) {
-        perror("Gagal mengenkripsi password");
+        perror("gagal mengenkripsi password");
         fclose(file);
         exit(EXIT_FAILURE);
     }
 
+    // menentukan peran (role) pengguna
     const char *role = is_file_empty(FILE_PATH) ? "ROOT" : "USER";
+
+    // menulis informasi pengguna baru ke dalam file
     fprintf(file, "%s,%s,%s\n", username, encrypted_password, role);
     fclose(file);
     printf("%s berhasil register sebagai %s\n", username, role);
@@ -436,56 +439,71 @@ void register_user(const char *username, const char *password) {
 Main Function
 ```c
 int main(int argc, char *argv[]) {
+    // memeriksa jumlah argumen command line
     if (argc < 2) {
-        printf("Usage: %s REGISTER username -p password\n", argv[0]);
-        printf("Usage: %s LOGIN username -p password\n", argv[0]);
+        printf("usage: %s register username -p password\n", argv[0]);
+        printf("usage: %s login username -p password\n", argv[0]);
         return -1;
     }
 
-    if (strcmp(argv[1], "REGISTER") == 0) {
+    // mode register
+    if (strcmp(argv[1], "register") == 0) {
+        // memeriksa argumen untuk registrasi
         if (argc != 5 || strcmp(argv[3], "-p") != 0) {
-            printf("Usage: %s REGISTER username -p password\n", argv[0]);
+            printf("usage: %s register username -p password\n", argv[0]);
             return -1;
         }
+        // panggil fungsi register_user dengan username dan password yang diberikan
         register_user(argv[2], argv[4]);
-    } else if (strcmp(argv[1], "LOGIN") == 0) {
+    }
+
+    // mode login
+    else if (strcmp(argv[1], "login") == 0) {
+        // memeriksa argumen untuk login
         if (argc != 5 || strcmp(argv[3], "-p") != 0) {
-            printf("Usage: %s LOGIN username -p password\n", argv[0]);
+            printf("usage: %s login username -p password\n", argv[0]);
             return -1;
         }
+        // memeriksa hasil dari fungsi login_user
         if (login_user(argv[2], argv[4])) {
-            char command[1024];
+            // inisialisasi variabel untuk koneksi socket
             int sock = 0;
             struct sockaddr_in serv_addr;
             char buffer[1024] = {0};
-            
+
+            // membuat socket
             if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-                printf("\n Socket creation error \n");
+                printf("\n socket creation error \n");
                 return -1;
             }
 
+            // mengisi informasi server
             serv_addr.sin_family = AF_INET;
-            serv_addr.sin_port = htons(SERVER_PORT);
-            
-            if(inet_pton(AF_INET, SERVER_IP, &serv_addr.sin_addr) <= 0) {
-                printf("\nInvalid address/ Address not supported \n");
+            serv_addr.sin_port = htons(server_port);
+            if(inet_pton(af_inet, server_ip, &serv_addr.sin_addr) <= 0) {
+                printf("\ninvalid address/ address not supported \n");
                 return -1;
             }
 
+            // melakukan koneksi ke server
             if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
-                printf("\nConnection Failed \n");
+                printf("\nconnection failed \n");
                 return -1;
             }
 
+            // memulai komunikasi dengan server
             printf("[%s] ", argv[2]);
+            char command[1024];
             while (fgets(command, sizeof(command), stdin)) {
-                command[strcspn(command, "\r\n")] = 0; 
-                send(sock, command, strlen(command), 0);
-                read(sock, buffer, 1024);
-                printf("%s\n", buffer);
-                printf("[%s] ", argv[2]);
-                memset(buffer, 0, sizeof(buffer));
+                command[strcspn(command, "\r\n")] = 0; // menghapus newline dari input
+                send(sock, command, strlen(command), 0); // mengirim perintah ke server
+                read(sock, buffer, 1024); // menerima respons dari server
+                printf("%s\n", buffer); // menampilkan respons dari server
+                printf("[%s] ", argv[2]); // menampilkan prompt untuk input berikutnya
+                memset(buffer, 0, sizeof(buffer)); // mengosongkan buffer
             }
+
+            // menutup soket setelah selesai
             close(sock);
         }
     }
